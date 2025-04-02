@@ -239,11 +239,11 @@ class Connection
     private function createRequest($method, $endpoint, $body = null, array $params = [], array $headers = [])
     {
         // Add default json headers to the request
-        $headers = array_merge($headers, [
+        $headers = array_merge([
             'Accept'       => 'application/json',
             'Content-Type' => 'application/json',
             'Prefer'       => 'return=representation',
-        ]);
+        ], $headers);
 
         $this->checkOrAcquireAccessToken();
 
@@ -268,19 +268,25 @@ class Connection
      * @param string $url
      * @param array  $params
      * @param array  $headers
+     * @param bool   $formatUrl
+     * @param bool   $rawResponse
      *
      * @throws ApiException
      *
      * @return mixed
      */
-    public function get($url, array $params = [], array $headers = [])
+    public function get($url, array $params = [], array $headers = [], $formatUrl = true, $rawResponse = false)
     {
         $this->waitIfMinutelyRateLimitHit();
-        $url = $this->formatUrl($url, $this->requiresDivisionInRequestUrl($url), $url === $this->nextUrl);
+        $url = $formatUrl ? $this->formatUrl($url, $this->requiresDivisionInRequestUrl($url), $url === $this->nextUrl) : $url;
 
         try {
             $request = $this->createRequest('GET', $url, null, $params, $headers);
             $response = $this->client()->send($request);
+
+            if ($rawResponse) {
+                return $response;
+            }
 
             return $this->parseResponse($response, $url != $this->nextUrl);
         } catch (Exception $e) {
